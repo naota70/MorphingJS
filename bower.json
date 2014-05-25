@@ -1,0 +1,24 @@
+{
+  "name": "MorphingJS",
+  "version": "0.0.0",
+  "authors": [
+    "NaokiMurata <murata@b42.co.jp>"
+  ],
+  "description": "It is a library of CreateJS is morphing animation using the triangulation a single illustration.",
+  "main": "lib/morphingjs-0.0.1.combined.js",
+  "keywords": [
+    "morphingjs",
+    "createjs",
+    "html5",
+    "canvas"
+  ],
+  "license": "MIT",
+  "homepage": "http://b42.co.jp",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

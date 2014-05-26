@@ -1,6 +1,9 @@
 (function (global, cjs) {
     'use strict';
 
+    var localStorage = global.localStorage;
+    var LOCAL_STORAGE_ID = 'laughMaker:autoSaveData';
+
     var VertexManager = function (stage) {
         this.initialize(stage);
     };
@@ -22,6 +25,42 @@
         self.vertices = [];
         self.faces = [];
         self.selected = [];
+
+        self.load();
+    };
+
+    p.load = function () {
+        var self = this;
+        var data = localStorage.getItem(LOCAL_STORAGE_ID);
+        if (!_.isEmpty(data)) {
+            if (_.isString(data)) {
+                data = JSON.parse(data);
+            }
+
+            _.each(data.vertices, function (v_data) {
+                self.createVertex(v_data.x, v_data.y, v_data.name);
+            });
+
+            _.each(data.faces, function (f_data) {
+                self.createFace([
+                    self.getVertexAtName(f_data[0]),
+                    self.getVertexAtName(f_data[1]),
+                    self.getVertexAtName(f_data[2])
+                ]);
+            });
+        }
+    };
+
+    p.save = function () {
+        var data = JSON.stringify({
+            vertices: _.map(this.vertices, function (v) {
+                return {x: v.x, y: v.y, name: v.name}
+            }),
+            faces: _.map(this.faces, function (f) {
+                return _.pluck(f.vertices, 'name');
+            })
+        });
+        global.writeToLocal('test.txt', data);
     };
 
     /**
@@ -29,12 +68,12 @@
      * @param x Number
      * @param y Number
      */
-    p.createVertex = function (x, y) {
+    p.createVertex = function (x, y, name) {
         var self = this;
         var vertices = self.vertices;
         var vertex = new cjs.Vertex();
 
-        vertex.name = 'v:' + cjs.UID.get();
+        vertex.name = name || 'v:' + Date.now() + cjs.UID.get();
         vertex.move(x, y);
         self.vContainer.addChild(vertex);
         vertices.push(vertex);
@@ -104,7 +143,7 @@
         }
 
         face = new cjs.Face(v0, v1, v2);
-        face.name = 'f:' + cjs.UID.get();
+        face.name = 'f:' + Date.now() + cjs.UID.get();
         self.fContainer.addChild(face);
         faces.push(face);
 
@@ -177,6 +216,12 @@
         }
 
         this.selected = [];
+    };
+
+    p.getVertexAtName = function (name) {
+        return _.detect(this.vertices, function (v) {
+            return v.name === name;
+        });
     };
 
 //    p.lockSelected = function () {

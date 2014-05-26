@@ -10,11 +10,16 @@
             background-color:#fff;
             border: 1px solid #333;
         }
+
+        .tool-menu li {
+            margin: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container" style="margin-top: 20px;">
-        <ul class="list-inline list-unstyled">
+        <ul class="tool-menu list-inline list-unstyled">
+            <li><button id="btn-save" class="btn btn-danger">保存</button></li>
             <li><button id="toggle-select" class="btn btn-primary">選択解除</button></li>
             <li><button id="toggle-face" class="btn btn-primary">面の表示切り替え</button></li>
             <li><button id="toggle-edge" class="btn btn-primary">辺の表示切り替え</button></li>

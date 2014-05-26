@@ -72,6 +72,9 @@
     $('#toggle-select').on('click', function () {
         vManger.cancelAll();
     });
+    $('#btn-save').on('click', function () {
+        vManger.save();
+    });
 
     Ticker.setFPS(FPS);
 

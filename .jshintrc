@@ -25,16 +25,11 @@
         //"after",      // Used by mocha
         //"afterEach"   // Used by mocha
         "define",
-        "require",
+        "alert",
         "console",
         "$",
         "_",
-        "Backbone",
-        "Handlebars",
-        "Bucks",
-        "window",
-        "alert",
-        "app"
+        "createjs"
     ],
 
 

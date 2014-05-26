@@ -54,13 +54,15 @@
     p.save = function () {
         var data = JSON.stringify({
             vertices: _.map(this.vertices, function (v) {
-                return {x: v.x, y: v.y, name: v.name}
+                return {x: v.x, y: v.y, name: v.name};
             }),
             faces: _.map(this.faces, function (f) {
                 return _.pluck(f.vertices, 'name');
             })
         });
-        global.writeToLocal('test.txt', data);
+        localStorage.setItem(LOCAL_STORAGE_ID, data);
+
+        alert('保存しました。');
     };
 
     /**
@@ -82,6 +84,7 @@
         vertex.addEventListener('mousedown', function () {
             return self._handleDown.apply(self, arguments);
         });
+        vertex.dispatchEvent(new cjs.MouseEvent('mousedown', false, false, x, y, {}), vertex);
     };
 
     /**
@@ -126,6 +129,15 @@
         }).length;
     };
 
+    p.existFace = function (v1, v2, v3) {
+        return !!_.detect(this.faces, function (f) {
+            var vs = f.vertices;
+            return vs.indexOf(v1) !== -1 &&
+                   vs.indexOf(v2) !== -1 &&
+                   vs.indexOf(v3) !== -1;
+        });
+    };
+
     p.createFace = function (__vertices__) {
         var self = this,
             faces = self.faces,
@@ -135,7 +147,13 @@
             v2 = __vertices__[2],
             e0 = self.countFaceWithEdge(v0, v1),
             e1 = self.countFaceWithEdge(v1, v2),
-            e2 = self.countFaceWithEdge(v2, v0);
+            e2 = self.countFaceWithEdge(v2, v0),
+            exist = self.existFace(v0, v1, v2);
+
+        if (exist) {
+            alert('すでに面があります。');
+            return;
+        }
 
         if (e0 === 2 || e1 === 2 || e2 === 2) {
             alert('面は、1つの辺につき2つまでしか作成できません。');

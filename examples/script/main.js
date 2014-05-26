@@ -1,16 +1,21 @@
 (function (global, cjs) {
     'use strict';
 
-    var $canvas = $('#canvas');
-    var offset = $canvas.offset();
-    var $position = $('#monitor-pos > span');
-    var stage = window.stage = new cjs.Stage($canvas[0]);
-    var Ticker = cjs.Ticker;
-    var $count = 0;
-    var $time = new Date().getTime();
-    var $fps = $('#monitor-fps > span');
-    var FPS = 60;
-    var vManger = new global.VertexManager(stage);
+    var $canvas     = $('#canvas'),
+        $position   = $('#monitor-pos > span'),
+        $fps        = $('#monitor-fps > span'),
+        offset      = $canvas.offset(),
+        stage       = new cjs.Stage($canvas[0]),
+        Ticker      = cjs.Ticker,
+        $count      = 0,
+        $time       = new Date().getTime(),
+        FPS         = 60,
+        vManger     = new global.VertexManager(stage);
+
+    function updateNum() {
+        $('#monitor-vertex > span').text(vManger.vertices.length);
+        $('#monitor-face > span').text(vManger.faces.length);
+    }
 
     $canvas.on({
         dblclick: function (e) {
@@ -18,6 +23,7 @@
             var x = e.pageX - offset.left;
             var y = e.pageY - offset.top;
             vManger.createVertex(x, y);
+            updateNum();
         },
         mousemove: function (e) {
             e.preventDefault();
@@ -27,21 +33,38 @@
         }
     });
 
-    $(document).keypress(function (e) {
+    $(document).keydown(function (e) {
         var selected = vManger.selected;
+        var num = selected.length;
+
         switch (e.which) {
-            case 8:
-                if (selected.length) {
+            case 8:// Delete key:delete vertex and face
+                if (num) {
                     e.preventDefault();
                     vManger.removeVertex(selected);
+                    updateNum();
                 }
                 break;
-            case 13:
-                if (selected.length === 3) {
+            case 13:// Enter key:create face
+                if (num === 3) {
                     e.preventDefault();
                     vManger.createFace(selected);
+                    updateNum();
+                } else if (num) {
+                    alert('頂点を' + num + 'コ選択しています。\n面を作成するには3つの頂点を選んでください。');
                 }
                 break;
+            case 83:// Cmd + s:save data
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    vManger.save();
+                }
+                break;
+            case 79:// Cmd + o:load data
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    alert('読み込み機能はまだ実装されていません。');
+                }
         }
     });
 
@@ -57,6 +80,7 @@
 
         $this.data('isVisible', !isVisible);
     });
+
     $('#toggle-face').on('click', function () {
         var $this = $(this);
         var isVisible = !!$this.data('isVisible');
@@ -69,9 +93,11 @@
 
         $this.data('isVisible', !isVisible);
     });
+
     $('#toggle-select').on('click', function () {
         vManger.cancelAll();
     });
+
     $('#btn-save').on('click', function () {
         vManger.save();
     });
@@ -91,5 +117,7 @@
 
         stage.update();
     });
+
+    updateNum();
 
 })(this, createjs);

@@ -17,20 +17,27 @@
     </style>
 </head>
 <body>
-    <div class="container" style="margin-top: 20px;">
-        <ul class="tool-menu list-inline list-unstyled">
-            <li><button id="btn-save" class="btn btn-danger">保存</button></li>
-            <li><button id="toggle-select" class="btn btn-primary">選択解除</button></li>
-            <li><button id="toggle-face" class="btn btn-primary">面の表示切り替え</button></li>
-            <li><button id="toggle-edge" class="btn btn-primary">辺の表示切り替え</button></li>
-            <li><button id="toggle-vertex" class="btn btn-primary disabled">頂点の表示切り替え</button></li>
-            <li><button id="delete-vertex" class="btn btn-primary disabled">面を持たない頂点の削除</button></li>
-        </ul>
-        <canvas id="canvas" width="540" height="540"></canvas>
-        <ul class="list-inline list-unstyled">
-            <li id="monitor-fps"><strong>FPS:</strong><span>0</span></li>
-            <li id="monitor-pos"><strong>座標:</strong><span>(0,0)</span></li>
-        </ul>
+    <div class="" style="margin: 20px;">
+        <div class="pull-left">
+            <ul class="tool-menu list-unstyled">
+                <li class="clearfix"><button id="btn-save" class="btn btn-danger col-xs-12">保存</button></li>
+                <li class="clearfix"><button id="btn-load" class="btn btn-danger disabled col-xs-12">読み込む</button></li>
+                <li class="clearfix"><button id="toggle-select" class="btn btn-primary col-xs-12">選択解除</button></li>
+                <li class="clearfix"><button id="toggle-face" class="btn btn-primary col-xs-12">面の表示切り替え</button></li>
+                <li class="clearfix"><button id="toggle-edge" class="btn btn-primary col-xs-12">辺の表示切り替え</button></li>
+                <li class="clearfix"><button id="toggle-vertex" class="btn btn-primary disabled col-xs-12">頂点の表示切り替え</button></li>
+                <li class="clearfix"><button id="delete-vertex" class="btn btn-primary disabled col-xs-12">面を持たない頂点の削除</button></li>
+            </ul>
+        </div>
+        <div class="pull-left">
+            <ul class="list-inline list-unstyled">
+                <li id="monitor-fps"><strong>FPS:</strong><span>0</span></li>
+                <li id="monitor-pos"><strong>座標:</strong><span>(0,0)</span></li>
+                <li id="monitor-vertex"><strong>頂点:</strong><span>0</span>コ</li>
+                <li id="monitor-face"><strong>面:</strong><span>0</span>コ</li>
+            </ul>
+            <canvas id="canvas" width="540" height="540"></canvas>
+        </div>
     </div>
 
     <!--vendor-->

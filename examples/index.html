@@ -3,30 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <title>Morphing Examples</title>
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="./style/bootstrap.min.css" rel="stylesheet">
     <style type="text/css">
         #canvas {
             cursor: crosshair;
-            background-color:#fff;
+            background: url(./image/bg.gif) top left;
             border: 1px solid #333;
         }
-
-        .tool-menu li {
-            margin: 5px;
+        .tool-menu {
+            margin-right: 10px;
         }
+        .tool-menu button {
+            width: 100%;
+        }
+        .tool-menu li {
+            margin-bottom: 10px;
+        }
+
     </style>
 </head>
 <body>
     <div class="" style="margin: 20px;">
-        <div class="pull-left">
+        <div class="pull-left" style="width: 200px;">
             <ul class="tool-menu list-unstyled">
-                <li class="clearfix"><button id="btn-save" class="btn btn-danger col-xs-12">保存</button></li>
-                <li class="clearfix"><button id="btn-load" class="btn btn-danger disabled col-xs-12">読み込む</button></li>
-                <li class="clearfix"><button id="toggle-select" class="btn btn-primary col-xs-12">選択解除</button></li>
-                <li class="clearfix"><button id="toggle-face" class="btn btn-primary col-xs-12">面の表示切り替え</button></li>
-                <li class="clearfix"><button id="toggle-edge" class="btn btn-primary col-xs-12">辺の表示切り替え</button></li>
-                <li class="clearfix"><button id="toggle-vertex" class="btn btn-primary disabled col-xs-12">頂点の表示切り替え</button></li>
-                <li class="clearfix"><button id="delete-vertex" class="btn btn-primary disabled col-xs-12">面を持たない頂点の削除</button></li>
+                <li>
+                    <h5>ファイル</h5>
+                    <ul class="list-unstyled row">
+                        <li class="col-xs-12"><button id="btn-save" class="btn btn-danger">保存</button></li>
+                        <li class="col-xs-12"><button id="btn-load" class="btn btn-danger disabled">読み込む</button></li>
+                        <li class="col-xs-12"><button id="toggle-select" class="btn btn-primary">選択解除</button></li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>表示</h5>
+                    <ul class="list-unstyled row">
+                        <li class="col-xs-12"><button id="toggle-face" class="btn btn-primary">面の表示切り替え</button></li>
+                        <li class="col-xs-12"><button id="toggle-edge" class="btn btn-primary">辺の表示切り替え</button></li>
+                        <li class="col-xs-12"><button id="toggle-vertex" class="btn btn-primary disabled">頂点の表示切り替え</button></li>
+                        <li class="col-xs-12"><button id="delete-vertex" class="btn btn-primary disabled">面を持たない頂点の削除</button></li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>整列</h5>
+                    <ul class="list-unstyled row">
+                        <li class="col-xs-4"><button data-align="alignLeft" class="btn btn-primary btn-align">左</button></li>
+                        <li class="col-xs-4"><button data-align="alignCenter" class="btn btn-primary btn-align">中</button></li>
+                        <li class="col-xs-4"><button data-align="alignRight" class="btn btn-primary btn-align">右</button></li>
+                        <li class="col-xs-4"><button data-align="alignBottom" class="btn btn-primary btn-align">下</button></li>
+                        <li class="col-xs-4"><button data-align="alignMiddle" class="btn btn-primary btn-align">中</button></li>
+                        <li class="col-xs-4"><button data-align="alignTop" class="btn btn-primary btn-align">上</button></li>
+                        <li class="col-xs-6"><button data-align="stackHorizon" class="btn btn-primary btn-align">横均等</button></li>
+                        <li class="col-xs-6"><button data-align="stackVertical" class="btn btn-primary btn-align">縦均等</button></li>
+                    </ul>
+                </li>
             </ul>
         </div>
         <div class="pull-left">
@@ -36,18 +65,18 @@
                 <li id="monitor-vertex"><strong>頂点:</strong><span>0</span>コ</li>
                 <li id="monitor-face"><strong>面:</strong><span>0</span>コ</li>
             </ul>
-            <canvas id="canvas" width="540" height="540"></canvas>
+            <canvas id="canvas" width="560" height="560"></canvas>
         </div>
     </div>
 
     <!--vendor-->
-	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-	<script src="//underscorejs.org/underscore-min.js"></script>
-	<script src="//code.createjs.com/easeljs-0.7.1.min.js"></script>
-	<script src="//code.createjs.com/tweenjs-0.5.1.min.js"></script>
-	<script src="//code.createjs.com/movieclip-0.7.1.min.js"></script>
-    <script src="//code.createjs.com/preloadjs-0.4.1.min.js"></script>
+	<script src="./script/vendor/jquery.min.js"></script>
+    <script src="./script/vendor/bootstrap.min.js"></script>
+	<script src="./script/vendor/underscore-min.js"></script>
+	<script src="./script/vendor/easeljs-0.7.1.min.js"></script>
+	<script src="./script/vendor/tweenjs-0.5.1.min.js"></script>
+	<script src="./script/vendor/movieclip-0.7.1.min.js"></script>
+    <script src="./script/vendor/preloadjs-0.4.1.min.js"></script>
 
     <!--lib-->
     <script src="../src/vertex.js"></script>

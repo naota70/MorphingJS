@@ -1,30 +1,24 @@
 (function (global, cjs) {
-// プリレンダリングを用いる
-// var m_canvas = document.createElement('canvas');
-// m_canvas.width = 64;
-// m_canvas.height = 64;
-// var m_context = m_canvas.getContext(‘2d’);
-// drawMario(m_context);
-
-// function render() {
-// context.drawImage(m_canvas, 0, 0);
-// requestAnimationFrame(render);
-// }
 
 	// vertexは自身の属するfaceをもつ
-	var Vertex = function () {
-		this.initialize();
+	var Vertex = function (x, y) {
+		this.initialize(x, y);
 	};
 
 	var p = Vertex.prototype = new cjs.Shape();
 
     p.Shape_initialize = p.initialize;
 
-    p.initialize = function () {
+    p.initialize = function (x, y) {
         this.Shape_initialize();
         this._isLocked = false;
         this._isSelected = false;
+        this.origin = {
+            x: x,
+            y: y
+        };
         this._drawVertex('blue');
+        this.move(x, y);
     };
 
     p.move = function (x, y) {

@@ -4,8 +4,8 @@
     var localStorage = global.localStorage;
     var LOCAL_STORAGE_ID = 'laughMaker:autoSaveData';
 
-    var VertexManager = function (stage) {
-        this.initialize(stage);
+    var VertexManager = function (stage, loader) {
+        this.initialize(stage, loader);
     };
 
     var p = VertexManager.prototype;
@@ -14,7 +14,7 @@
      * 初期化
      * @param stage createjs.Stage
      */
-    p.initialize = function (stage) {
+    p.initialize = function (stage, loader) {
         var self = this;
         var vContainer = self.vContainer = new cjs.Container();
         var fContainer = self.fContainer = new cjs.Container();
@@ -22,6 +22,7 @@
         stage.addChild(fContainer, vContainer);
 
         self.stage = stage;
+        self.loader = loader;
         self.vertices = [];
         self.faces = [];
         self.selected = [];
@@ -45,7 +46,8 @@
                 self.createFace([
                     self.getVertexAtName(f_data[0]),
                     self.getVertexAtName(f_data[1]),
-                    self.getVertexAtName(f_data[2])
+                    self.getVertexAtName(f_data[2]),
+                    self.getVertexAtName(f_data[3])
                 ]);
             });
         }
@@ -73,10 +75,9 @@
     p.createVertex = function (x, y, name) {
         var self = this;
         var vertices = self.vertices;
-        var vertex = new cjs.Vertex();
+        var vertex = new cjs.Vertex(x, y);
 
         vertex.name = name || 'v:' + Date.now() + cjs.UID.get();
-        vertex.move(x, y);
         self.vContainer.addChild(vertex);
         vertices.push(vertex);
 
@@ -117,50 +118,52 @@
         }
     };
 
-    /**
-     * 2点を結ぶ辺を保持する面の数を返す
-     * @param v1 createjs.Vertex
-     * @param v2 createjs.Vertex
-     */
-    p.countFaceWithEdge = function (v1, v2) {
-        return _.select(this.faces, function (f) {
-            return f.vertices.indexOf(v1) !== -1 &&
-                   f.vertices.indexOf(v2) !== -1;
-        }).length;
-    };
-
-    p.existFace = function (v1, v2, v3) {
-        return !!_.detect(this.faces, function (f) {
-            var vs = f.vertices;
-            return vs.indexOf(v1) !== -1 &&
-                   vs.indexOf(v2) !== -1 &&
-                   vs.indexOf(v3) !== -1;
-        });
-    };
+//    /**
+//     * 2点を結ぶ辺を保持する面の数を返す
+//     * @param v1 createjs.Vertex
+//     * @param v2 createjs.Vertex
+//     */
+//    p.countFaceWithEdge = function (v1, v2) {
+//        return _.select(this.faces, function (f) {
+//            return f.vertices.indexOf(v1) !== -1 &&
+//                   f.vertices.indexOf(v2) !== -1;
+//        }).length;
+//    };
+//
+//    p.existFace = function (v1, v2, v3, v4) {
+//        return !!_.detect(this.faces, function (f) {
+//            var vs = f.vertices;
+//            return vs.indexOf(v1) !== -1 &&
+//                   vs.indexOf(v2) !== -1 &&
+//                   vs.indexOf(v3) !== -1 &&
+//                   vs.indexOf(v4) !== -1;
+//        });
+//    };
 
     p.createFace = function (__vertices__) {
         var self = this,
             faces = self.faces,
-            face,
-            v0 = __vertices__[0],
-            v1 = __vertices__[1],
-            v2 = __vertices__[2],
-            e0 = self.countFaceWithEdge(v0, v1),
-            e1 = self.countFaceWithEdge(v1, v2),
-            e2 = self.countFaceWithEdge(v2, v0),
-            exist = self.existFace(v0, v1, v2);
+            face = new cjs.Face(__vertices__, self.loader.getItem('erutaso').tag);
+//            v0 = __vertices__[0],
+//            v1 = __vertices__[1],
+//            v2 = __vertices__[2],
+//            v3 = __vertices__[3],
+//            e0 = self.countFaceWithEdge(v0, v1),
+//            e1 = self.countFaceWithEdge(v1, v2),
+//            e2 = self.countFaceWithEdge(v2, v3),
+//            e3 = self.countFaceWithEdge(v3, v0),
+//            exist = self.existFace(v0, v1, v2, v3);
+//
+//        if (exist) {
+//            alert('すでに面があります。');
+//            return;
+//        }
+//
+//        if (e0 === 2 || e1 === 2 || e2 === 2) {
+//            alert('面は、1つの辺につき2つまでしか作成できません。');
+//            return;
+//        }
 
-        if (exist) {
-            alert('すでに面があります。');
-            return;
-        }
-
-        if (e0 === 2 || e1 === 2 || e2 === 2) {
-            alert('面は、1つの辺につき2つまでしか作成できません。');
-            return;
-        }
-
-        face = new cjs.Face(v0, v1, v2);
         face.name = 'f:' + Date.now() + cjs.UID.get();
         self.fContainer.addChild(face);
         faces.push(face);
@@ -170,44 +173,44 @@
             index !== -1 && faces.splice(index, 1);
         });
 
-        face.addEventListener('mousedown', function (e) {
-            var f = e.target,
-                isShift = e.nativeEvent.shiftKey,
-                vertices = f.vertices,
-                selected = self.selected;
-
-            if (f.isSelected()) {//選択済み
-                if (isShift) {//選択解除
-                    _.each(vertices, function (v) {
-                        var i = selected.indexOf(v);
-                        i !== -1 && selected.splice(i, 1);
-                        v.cancel();
-                    });
-                }
-                return;
-            }
-
-            if (_.any(vertices, function (v) {
-                return v.isLocked();
-            })) {// １つ以上ロック中
-                return;
-            }
-
-            if (!isShift) {// 選択中の頂点をキャンセル
-                _.each(selected, function (v) {
-                    v.cancel();
-                });
-                self.selected = selected = [];
-            }
-
-            _.each(vertices, function (v) {
-                if (selected.indexOf(v) === -1) {
-                    selected.push(v);
-                }
-
-                v.select();
-            });
-        });
+//        face.addEventListener('mousedown', function (e) {
+//            var f = e.target,
+//                isShift = e.nativeEvent.shiftKey,
+//                vertices = f.vertices,
+//                selected = self.selected;
+//
+//            if (f.isSelected()) {//選択済み
+//                if (isShift) {//選択解除
+//                    _.each(vertices, function (v) {
+//                        var i = selected.indexOf(v);
+//                        i !== -1 && selected.splice(i, 1);
+//                        v.cancel();
+//                    });
+//                }
+//                return;
+//            }
+//
+//            if (_.any(vertices, function (v) {
+//                return v.isLocked();
+//            })) {// １つ以上ロック中
+//                return;
+//            }
+//
+//            if (!isShift) {// 選択中の頂点をキャンセル
+//                _.each(selected, function (v) {
+//                    v.cancel();
+//                });
+//                self.selected = selected = [];
+//            }
+//
+//            _.each(vertices, function (v) {
+//                if (selected.indexOf(v) === -1) {
+//                    selected.push(v);
+//                }
+//
+//                v.select();
+//            });
+//        });
     };
 
     p.selectedFaces = function () {
@@ -264,37 +267,79 @@
 //        }
 //    };
 
-//    p.alignLeft = function () {
-//
-//    };
-//
-//    p.alignRight = function () {
-//
-//    };
-//
-//    p.alignCenter = function () {
-//
-//    };
-//
-//    p.alignTop = function () {
-//
-//    };
-//
-//    p.alignBottom = function () {
-//
-//    };
-//
-//    p.alignMiddle = function () {
-//
-//    };
-//
-//    p.stackVertical = function () {
-//
-//    };
-//
-//    p.stackHorizon = function () {
-//
-//    };
+    p.alignLeft = function () {
+        this._setAlign(_.min(this.selected, function (v) {
+            return v.x;
+        }).x);
+    };
+
+    p.alignRight = function () {
+        this._setAlign(_.max(this.selected, function (v) {
+            return v.x;
+        }).x);
+    };
+
+    p.alignCenter = function () {
+        var vs = this.selected;
+        this._setAlign(_.reduce(vs, function (memo, v) {
+            return memo + v.x;
+        }, 0) / vs.length|0);
+    };
+
+    p._setAlign = function (x, y) {
+        _.each(this.selected, function (v) {
+            v.move(x || v.x, y || v.y);
+        });
+    };
+
+    p.alignTop = function () {
+        this._setAlign(0, _.min(this.selected, function (v) {
+            return v.y;
+        }).y);
+    };
+
+    p.alignBottom = function () {
+        this._setAlign(0, _.max(this.selected, function (v) {
+            return v.y;
+        }).y);
+    };
+
+    p.alignMiddle = function () {
+        var vs = this.selected;
+        this._setAlign(0, _.reduce(vs, function (memo, v) {
+            return memo + v.y;
+        }, 0) / vs.length|0);
+    };
+
+    p.stackVertical = function () {
+        var vs = this.selected;
+        var min = _.sortBy(vs, function (v) {
+            return v.y;
+        });
+        var minY = min[0].y;
+        var maxY = _.max(vs, function (v) {
+            return v.y;
+        }).y;
+        var range = _.range(minY, maxY + 1, (maxY - minY) / (vs.length - 1));
+        _.each(min, function (v, i) {
+            v.move(v.x, range[i]|0);
+        });
+    };
+
+    p.stackHorizon = function () {
+        var vs = this.selected;
+        var min = _.sortBy(vs, function (v) {
+            return v.x;
+        });
+        var minX = min[0].x;
+        var maxX = _.max(vs, function (v) {
+            return v.x;
+        }).x;
+        var range = _.range(minX, maxX + 1, (maxX - minX) / (vs.length - 1));
+        _.each(min, function (v, i) {
+            v.move(range[i]|0, v.y);
+        });
+    };
 
     p._handleDown = function (e) {
         e.preventDefault();

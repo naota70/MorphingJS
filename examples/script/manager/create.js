@@ -4,11 +4,11 @@
     var localStorage = global.localStorage;
     var LOCAL_STORAGE_ID = 'laughMaker:autoSaveData';
 
-    var VertexManager = function (stage, loader) {
+    var CreateManager = function (stage, loader) {
         this.initialize(stage, loader);
     };
 
-    var p = VertexManager.prototype;
+    var p = CreateManager.prototype;
 
     /**
      * 初期化
@@ -86,6 +86,8 @@
             return self._handleDown.apply(self, arguments);
         });
         vertex.dispatchEvent(new cjs.MouseEvent('mousedown', false, false, x, y, {}), vertex);
+
+        return vertex;
     };
 
     /**
@@ -118,51 +120,14 @@
         }
     };
 
-//    /**
-//     * 2点を結ぶ辺を保持する面の数を返す
-//     * @param v1 createjs.Vertex
-//     * @param v2 createjs.Vertex
-//     */
-//    p.countFaceWithEdge = function (v1, v2) {
-//        return _.select(this.faces, function (f) {
-//            return f.vertices.indexOf(v1) !== -1 &&
-//                   f.vertices.indexOf(v2) !== -1;
-//        }).length;
-//    };
-//
-//    p.existFace = function (v1, v2, v3, v4) {
-//        return !!_.detect(this.faces, function (f) {
-//            var vs = f.vertices;
-//            return vs.indexOf(v1) !== -1 &&
-//                   vs.indexOf(v2) !== -1 &&
-//                   vs.indexOf(v3) !== -1 &&
-//                   vs.indexOf(v4) !== -1;
-//        });
-//    };
-
+    /**
+     * ToDo: 同じ頂点を用いた際の予防線
+     * @param __vertices__
+     */
     p.createFace = function (__vertices__) {
         var self = this,
             faces = self.faces,
             face = new cjs.Face(__vertices__, self.loader.getItem('erutaso').tag);
-//            v0 = __vertices__[0],
-//            v1 = __vertices__[1],
-//            v2 = __vertices__[2],
-//            v3 = __vertices__[3],
-//            e0 = self.countFaceWithEdge(v0, v1),
-//            e1 = self.countFaceWithEdge(v1, v2),
-//            e2 = self.countFaceWithEdge(v2, v3),
-//            e3 = self.countFaceWithEdge(v3, v0),
-//            exist = self.existFace(v0, v1, v2, v3);
-//
-//        if (exist) {
-//            alert('すでに面があります。');
-//            return;
-//        }
-//
-//        if (e0 === 2 || e1 === 2 || e2 === 2) {
-//            alert('面は、1つの辺につき2つまでしか作成できません。');
-//            return;
-//        }
 
         face.name = 'f:' + Date.now() + cjs.UID.get();
         self.fContainer.addChild(face);
@@ -172,45 +137,6 @@
             var index = faces.indexOf(e.target);
             index !== -1 && faces.splice(index, 1);
         });
-
-//        face.addEventListener('mousedown', function (e) {
-//            var f = e.target,
-//                isShift = e.nativeEvent.shiftKey,
-//                vertices = f.vertices,
-//                selected = self.selected;
-//
-//            if (f.isSelected()) {//選択済み
-//                if (isShift) {//選択解除
-//                    _.each(vertices, function (v) {
-//                        var i = selected.indexOf(v);
-//                        i !== -1 && selected.splice(i, 1);
-//                        v.cancel();
-//                    });
-//                }
-//                return;
-//            }
-//
-//            if (_.any(vertices, function (v) {
-//                return v.isLocked();
-//            })) {// １つ以上ロック中
-//                return;
-//            }
-//
-//            if (!isShift) {// 選択中の頂点をキャンセル
-//                _.each(selected, function (v) {
-//                    v.cancel();
-//                });
-//                self.selected = selected = [];
-//            }
-//
-//            _.each(vertices, function (v) {
-//                if (selected.indexOf(v) === -1) {
-//                    selected.push(v);
-//                }
-//
-//                v.select();
-//            });
-//        });
     };
 
     p.selectedFaces = function () {
@@ -244,28 +170,6 @@
             return v.name === name;
         });
     };
-
-//    p.lockSelected = function () {
-//        var self = this;
-//        var selected = self.selected;
-//        for (var i = 0, len = selected.length, v; i < len; i++) {
-//            v = selected[i];
-//            v.lock();
-//        }
-//
-//        self.selected = [];
-//    };
-//
-//    p.unlockAll = function () {
-//        var self = this;
-//        var vertices = self.vertices;
-//        for (var i = 0, len = vertices.length, v; i < len; i++) {
-//            v = vertices[i];
-//            if (v.isLocked()) {
-//                v.unlock();
-//            }
-//        }
-//    };
 
     p.alignLeft = function () {
         this._setAlign(_.min(this.selected, function (v) {
@@ -341,6 +245,49 @@
         });
     };
 
+    p.selectAtRect = function (leftTopX, leftTopY, rightBottomX, rightBottomY) {
+        this.selected = _.select(this.vertices, function (v) {
+            if (v.x >= leftTopX && v.x <= rightBottomX && v.y >= leftTopY && v.y <= rightBottomY) {
+                v.select();
+                return true;
+            }
+
+            v.cancel();
+            return false;
+        });
+    };
+
+    p.createGrid = function (leftTopX, leftTopY, rightBottomX, rightBottomY, width, height) {
+        var self = this;
+        var xRange = _.range(leftTopX, rightBottomX + 1, width);
+        var yRange = _.range(leftTopY, rightBottomY + 1, height);
+        var xLen = xRange.length;
+        var yLen = yRange.length;
+        var vertices = [];
+
+        // createVertex
+        for (var n = 0; n < yLen; n++) {
+            for (var i = 0; i < xLen; i++) {
+                vertices.push(self.createVertex(xRange[i], yRange[n]));
+            }
+        }
+
+        if (xLen > 1 && yLen > 1) {
+            // createFace
+            _.each(vertices, function (v, i) {
+                try {
+                    if ((i + 1) % xLen && vertices.length > i + xLen) {
+                        self.createFace([v, vertices[i + 1], vertices[i + xLen], vertices[i + xLen + 1]]);
+                    }
+                } catch (e) {
+                    console.error(i + ': i + 1 % xLen = ' + (i + 1 % xLen) + ' vertices.length > i + xLen = ' + (vertices.length > i + xLen));
+                }
+            });
+        }
+    };
+
+
+
     p._handleDown = function (e) {
         e.preventDefault();
 
@@ -407,10 +354,10 @@
 
     if (typeof define === 'function' && define.amd) {
         define([], function () {
-            return VertexManager;
+            return CreateManager;
         });
     } else {
-        global.VertexManager = VertexManager;
+        global.CreateManager = CreateManager;
     }
 
 })(this, createjs);

@@ -1,8 +1,13 @@
 (function (global, cjs) {
+    'use strict';
 
     function cloneShallow(source) {
-        var obj = {}
-        for (var prop in source) obj[prop] = source[prop];
+        var obj = {};
+        for (var prop in source) {
+            if (source.hasOwnProperty(prop)) {
+                obj[prop] = source[prop];
+            }
+        }
         return obj;
     }
 
@@ -34,33 +39,31 @@
 
     p._isPlaying = false;
 
-    p._imageData = null;
+    p._prevLabel = '';
+
+    p._currentLabel = '';
 
     p._tweenTarget = null;
-
-    p._mapping = null;
 
     p._morphParam = null;
 
     p._originMapping = null;
 
-    p._prevLabel = '';
+    p.originCanvas = null;
 
-    p._currentLabel = '';
+    p.cacheCanvas = null;
 
     /**
-     * @override
-     * @param image
-     * @param originFaces
-     * @param options
+     *
+     * @param width
+     * @param height
+     * @param origin
      */
     p.initialize =  function (width, height, origin) {
 
         this.DisplayObject_initialize();
 
         this._morphParam = {};
-
-        this._mapping = {};
 
         // origin
         this.setOrigin(origin);
@@ -76,22 +79,21 @@
 
     p.setOrigin = function (origin) {
         var morph = this.addMorph(Morphing.ORIGIN, origin);
-        this._prevLabel = this._currentLabel = Morphing.ORIGIN;
-        this._tweenTarget = cloneShallow(morph);
-        this._originMapping = this._createMappingData(this._tweenTarget);
+        var clone = this._tweenTarget = cloneShallow(morph);
+
+        this._prevLabel = Morphing.ORIGIN;
+        this._originMapping = this._createMappingData(clone);
     };
 
     /**
-     * @override
+     *
      * @param ctx
-     * @param ignoreCache
      * @returns {boolean}
      */
-    p.draw = function (ctx, ignoreCache) {
+    p.draw = function (ctx) {
 
         if (this._isPlaying) {
-            this._mapping = this._createMappingData(this._tweenTarget);
-            this._drawMapping();
+            this._drawMapping(this._tweenTarget);
         }
 
         ctx.drawImage(this.cacheCanvas, this.parent.x, this.parent.y);
@@ -127,10 +129,13 @@
     };
 
     /**
-     * @param ctx
+     *
+     * @param mappingMorph マッピングさせるMorphデータオブジェクト
+     * @param [adjustX]
+     * @param [adjustY]
      * @private
      */
-    p._drawMapping = function (adjustX, adjustY) {
+    p._drawMapping = function (mappingMorph, adjustX, adjustY) {
 
         var originCanvas = this.originCanvas;
         var cacheCanvas = this.cacheCanvas;
@@ -139,13 +144,14 @@
         var o, w, h;
         var t1, t2, t3, t4, t5, t6;
         var v0, v1, v2, v3;
+        var mapping = this._createMappingData(mappingMorph);
 
         adjustX = adjustX || 0;
         adjustY = adjustY || 0;
 
         ctx.clearRect(0, 0, cacheCanvas.width + 1, cacheCanvas.height + 1);
 
-        _.each(this._mapping, function (face, i) {
+        _.each(mapping, function (face, i) {
             v0 = face['0'];
             v1 = face['1'];
             v2 = face['2'];
@@ -171,7 +177,7 @@
             ctx.closePath();
             ctx.clip();
             ctx.setTransform(t1, t2, t3, t4, t5, t6);
-            ctx.drawImage(originCanvas, 0 - t5 - adjustX, 0 - t6 - adjustY/*, w, h*/);
+            ctx.drawImage(originCanvas, 0 - o['0'].x - adjustX, 0 - o['0'].y - adjustY/*, w, h*/);
             ctx.restore();
 
             //=================================
@@ -191,7 +197,7 @@
             ctx.closePath();
             ctx.clip();
             ctx.setTransform(t1, t2, t3, t4, t5, t6);
-            ctx.drawImage(originCanvas, 0 - t5 - adjustX, 0 - t6 - adjustY/*, w, h*/);
+            ctx.drawImage(originCanvas, 0 - o['2'].x - adjustX, 0 - o['2'].y - adjustY/*, w, h*/);
             ctx.restore();
         });
     };
@@ -212,12 +218,15 @@
     p.convertFaceToMorphParam = function (faces) {
         var param = {};
 
-        for (var i = 0, len = faces.length, f; i < len; i++) {
+        for (var i = 0, len = faces.length, vs, f; i < len; i++) {
             f = faces[i];
-            _.each(f.vertices, function (v, i) {
-                param[f.name + '_' + i + '_x'] = v.x;
-                param[f.name + '_' + i + '_y'] = v.y;
-            });
+            vs = f.vertices;
+
+            for (var n = 0, nLen = vs.length, v; n < nLen; n++) {
+                v = vs[n];
+                param[f.name + '_' + n + '_x'] = v.x;
+                param[f.name + '_' + n + '_y'] = v.y;
+            }
         }
 
         return param;
@@ -227,6 +236,7 @@
      *
      * @param label
      * @param faces
+     * @returns {object}
      */
     p.addMorph = function (label, faces) {
         if (!label) {
@@ -234,7 +244,9 @@
             return null;
         }
 
-        return (this._morphParam[label] = this.convertFaceToMorphParam(faces));
+        this._morphParam[label] = this.convertFaceToMorphParam(faces);
+
+        return this._morphParam[label];
     };
 
     /**
@@ -288,6 +300,15 @@
         return this;
     };
 
+    p.standby = function (label) {
+        var clone = cloneShallow(this.getMorph(label));
+
+        this._prevLabel = label;
+        this._drawMapping(clone);
+
+        return this;
+    };
+
     /**
      * @param toLabel
      * @param options
@@ -300,6 +321,7 @@
         var duration = options.duration || 250;
         var easing = options.easing || cjs.Ease.none;
         var param = this.getMorph(toLabel);
+        var onComplete = options.onComplete || Morphing.NONE;
 
         if (this._isPlaying) {
             this._prevLabel = this._currentLabel;
@@ -322,17 +344,39 @@
                 this._prevLabel = fromLabel;
 
                 if (reset || reverse) {
-                    this.dispatchEvent('reverse');
+                    onComplete();
                     this.gotoAndPlay(toLabel, options);
                 } else {
                     this._isPlaying = false;
                     delete this._currentLabel;
-                    this.dispatchEvent('complete');
+                    onComplete();
                 }
 
             }, [toLabel, options], this);
 
         return this;
+    };
+
+    /**
+     * 自身を削除します
+     * @param [removeSelf]
+     */
+    p.dispose = function (removeSelf) {
+        this.removeAllEventListeners();
+
+        this._tweenTarget = null;
+
+        this._morphParam = null;
+
+        this._originMapping = null;
+
+        this.originCanvas = null;
+
+        this.cacheCanvas = null;
+
+        if (removeSelf && this.parent) {
+            this.parent.removeChild(this);
+        }
     };
 
     /**

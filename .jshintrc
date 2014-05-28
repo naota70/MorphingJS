@@ -26,6 +26,7 @@
         //"afterEach"   // Used by mocha
         "define",
         "alert",
+        "confirm",
         "console",
         "$",
         "_",

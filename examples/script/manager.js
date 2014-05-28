@@ -275,12 +275,8 @@
         if (xLen > 1 && yLen > 1) {
             // createFace
             _.each(vertices, function (v, i) {
-                try {
-                    if ((i + 1) % xLen && vertices.length > i + xLen) {
-                        self.createFace([v, vertices[i + 1], vertices[i + xLen], vertices[i + xLen + 1]]);
-                    }
-                } catch (e) {
-                    console.error(i + ': i + 1 % xLen = ' + (i + 1 % xLen) + ' vertices.length > i + xLen = ' + (vertices.length > i + xLen));
+                if ((i + 1) % xLen && vertices.length > i + xLen) {
+                    self.createFace([v, vertices[i + 1], vertices[i + xLen], vertices[i + xLen + 1]]);
                 }
             });
         }

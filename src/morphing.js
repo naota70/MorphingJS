@@ -63,10 +63,7 @@
         this._mapping = {};
 
         // origin
-        var morph = this.addMorph(Morphing.ORIGIN, origin);
-        this._prevLabel = this._currentLabel = Morphing.ORIGIN;
-        this._tweenTarget = cloneShallow(morph);
-        this._originMapping = this._createMappingData(this._tweenTarget);
+        this.setOrigin(origin);
 
         // cache
         var originCanvas = this.originCanvas = document.createElement('canvas');
@@ -75,6 +72,13 @@
 
         this.cacheCanvas = originCanvas.cloneNode(true);
 
+    };
+
+    p.setOrigin = function (origin) {
+        var morph = this.addMorph(Morphing.ORIGIN, origin);
+        this._prevLabel = this._currentLabel = Morphing.ORIGIN;
+        this._tweenTarget = cloneShallow(morph);
+        this._originMapping = this._createMappingData(this._tweenTarget);
     };
 
     /**

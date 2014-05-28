@@ -17,8 +17,8 @@
             MODE_MOVE   = 'moveVertex',
             MODE_ADD    = 'addVertex',
             mode        = MODE_MOVE,
-            mManager     = new global.MorphingManager(),
-            cManager     = new global.CreateManager(stage, e.target);
+            cManager    = new global.CreateManager(stage, e.target),
+            morphing;
 
         function updateNum() {
             $vertex.text(cManager.vertices.length);
@@ -193,13 +193,6 @@
             }
         });
 
-        $('[data-morphing]').on({
-            click: function (e) {
-                var cmd = $(e.currentTarget).data('morphing');
-                mManager[cmd].apply(mManager, [cManager.faces]);
-            }
-        });
-
         // 始動!!!
         Ticker.setFPS(FPS);
 
@@ -218,6 +211,58 @@
         });
 
         updateNum();
+
+        // morphing
+        $(document).on('click', '[data-morphing]', function (e) {
+            var cmd = $(e.currentTarget).data('morphing');
+            var label = $('.morphing-label').text();
+
+            switch (cmd) {
+                case 'add':
+                    if (morphing) {
+                        if (!label.length) {
+                            alert('ラベル名をつけてください。');
+                            break;
+                        }
+
+                        morphing.addMorph(label, cManager.faces);
+                        $('.morphing-list').append('<li data-morphing="' + label + '">' + label + '</li>');
+                    } else {
+                        morphing = new cjs.Morphing(320, 320, cManager.faces);
+                        morphing.setTexture(e.target.getItem('erutaso').tag, -100, -100);
+                        morphing.visible = false;
+                        stage.addChild(morphing);
+                    }
+                    break;
+                case 'remove':
+                    morphing.removeMorph($(e.currentTarget).text());
+                    break;
+                case 'play':
+                    if (!morphing) {
+                        break;
+                    }
+
+                    cManager.vContainer.visible = false;
+                    cManager.fContainer.visible = false;
+                    morphing.visible = true;
+                    morphing.gotoAndPlay('test', {
+                        duration: 1000,
+                        onComplete: function () {
+                            cManager.vContainer.visible = true;
+                            cManager.fContainer.visible = true;
+                            morphing.visible = false;
+                        }
+                    });
+                    break;
+                case 'setOrigin':
+                    if (!morphing) {
+                        break;
+                    }
+
+                    morphing.setOrigin(cManager.faces);
+                    break;
+            }
+        });
     }
 
     var loader = new cjs.LoadQueue(false);

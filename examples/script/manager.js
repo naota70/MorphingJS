@@ -127,7 +127,7 @@
     p.createFace = function (__vertices__) {
         var self = this,
             faces = self.faces,
-            face = new cjs.Face(__vertices__, self.loader.getItem('erutaso').tag);
+            face = new cjs.Face(__vertices__, self.loader.getItem('eye').tag);
 
         face.name = 'f:' + Date.now() + cjs.UID.get();
         self.fContainer.addChild(face);

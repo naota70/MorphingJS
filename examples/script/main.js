@@ -254,7 +254,7 @@
                     } else {
                         label = 'origin';
                         morphing = new cjs.Morphing(320, 320, cManager.faces);
-                        morphing.setTexture(loader.getItem('erutaso').tag, -100, -100);
+                        morphing.setTexture(loader.getItem('eye').tag);
                         morphing.visible = false;
                         stage.addChild(morphing);
                     }

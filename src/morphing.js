@@ -112,6 +112,25 @@
         return new Face(name, vertices);
     };
 
+    Morphing.import = function (data_array, spriteCanvas) {
+        var _import = {};
+
+        data_array = isArray(data_array) ? data_array : [data_array];
+
+        _.each(data_array, function (data) {
+            var morphing = new cjs.Morphing(data.w, data.h, data.m);
+
+            data.t.push(spriteCanvas);
+
+            morphing.name = data.n;
+            morphing.setTexture.apply(morphing, data.t);
+
+            _import[data.n] = morphing;
+        });
+
+        return _import;
+    };
+
     var p = Morphing.prototype = new cjs.Bitmap();
 
     p._isPlaying = false;
@@ -125,6 +144,8 @@
     p._morphParam = null;
 
     p._originMapping = null;
+
+    p._textureArgs = null;
 
     p.originCanvas = null;
 
@@ -141,16 +162,16 @@
         this.DisplayObject_initialize();
 
         // origin
-        this.initMorph(origin);
+        this._initOrigin(origin);
 
         // cache
-        var originCanvas        = this.originCanvas = document.createElement('canvas');
-        originCanvas.width  = width;
+        var originCanvas = this.originCanvas = document.createElement('canvas');
+        originCanvas.width = width;
         originCanvas.height = height;
-        this.cacheCanvas    = originCanvas.cloneNode(true);
+        this.cacheCanvas = originCanvas.cloneNode(true);
     };
 
-    p.initMorph = function (morphData) {
+    p._initOrigin = function (morphData) {
         var origin;
 
         if (isArray(morphData)) {
@@ -163,6 +184,21 @@
         this._tweenTarget   = cloneShallow(origin);
         this._originMapping = this._createMappingData(this._tweenTarget);
         this._prevLabel     = Morphing.ORIGIN;
+    };
+
+    p.export = function () {
+        return JSON.stringify({
+            // name
+            n: this.name || 'untitled',
+            // width
+            w: this.cacheCanvas.width,
+            // height
+            h: this.cacheCanvas.height,
+            // morph
+            m: this.getMorph(),
+            // texture arguments
+            t: this._textureArgs.splice(1, this._textureArgs.length)
+        });
     };
 
     /**
@@ -362,7 +398,7 @@
      *
      */
     p.setTexture = function () {
-        var args = slice.call(arguments);
+        var args = this._textureArgs = slice.call(arguments);
         var canvas = this.originCanvas,
             eleType = args[0].toString(),
             ctx = canvas.getContext('2d');
@@ -457,6 +493,8 @@
         this.originCanvas = null;
 
         this.cacheCanvas = null;
+
+        this._textureArgs = null;
 
         if (removeSelf && this.parent) {
             this.parent.removeChild(this);

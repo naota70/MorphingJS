@@ -17,14 +17,19 @@
             MODE_MOVE   = 'moveVertex',
             MODE_ADD    = 'addVertex',
             mode        = MODE_MOVE,
-            loader      = e.target,
-            cManager    = new global.CreateManager(stage, loader),
+            eyeImage    = e.target.getItem('eye').tag,
+            eyeX        = (320 - eyeImage.width) / 2 | 0,
+            eyeY        = (320 - eyeImage.height) / 2 | 0,
+            cManager    = new global.CreateManager(stage),
             morphing;
 
         function updateNum() {
             $vertex.text(cManager.vertices.length);
             $face.text(cManager.faces.length);
         }
+
+
+        cManager.setTexture(eyeImage, eyeX, eyeY);
 
         // キャンバス
         $canvas.on({
@@ -106,6 +111,11 @@
                 case 83:// Cmd + s:save data
                     if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
+
+                        if (morphing) {
+                            localStorage.setItem(lsID, JSON.stringify(morphing._morphParam));
+                        }
+
                         cManager.save();
                     }
                     break;
@@ -213,6 +223,22 @@
 
         updateNum();
 
+        var lsID = 'morphing:' + eyeImage.src + eyeImage.width + eyeImage.height;
+        var morphingData = JSON.parse(localStorage.getItem(lsID));
+
+        if (!_.isEmpty(morphingData) && morphingData.origin) {
+            morphing = new cjs.Morphing(320, 320, morphingData);
+            morphing.setTexture(eyeImage, eyeX, eyeY);
+            morphing.visible = false;
+
+            stage.addChild(morphing);
+
+            _.each(morphing._morphParam, function (faces, label) {
+                $('.morphing-select').append('<option value="' + label + '">' + label + '</option>');
+            });
+        }
+
+
         // morphing
         $(document).on('click', '[data-morphing]', function (e) {
             var cmd = $(e.currentTarget).data('morphing');
@@ -245,16 +271,24 @@
                 case 'add':
                     label = $('[name="morphing-add"]').val();
 
+                    // faces情報を生成
+                    var faces = _.map(cManager.faces, function (f) {
+                        var vs = _.map(f.vertices, function (v) {
+                            return cjs.Morphing.generateVertex(v.name, v.x, v.y);
+                        });
+                        return cjs.Morphing.generateFace(f.name, vs);
+                    });
+
                     if (morphing) {
                         if (!label.length) {
                             alert('ラベル名をつけてください。');
                             break;
                         }
-                        morphing.addMorph(label, cManager.faces);
+                        morphing.addMorph(label, faces);
                     } else {
                         label = 'origin';
-                        morphing = new cjs.Morphing(320, 320, cManager.faces);
-                        morphing.setTexture(loader.getItem('eye').tag);
+                        morphing = new cjs.Morphing(320, 320, faces);
+                        morphing.setTexture(eyeImage, eyeX, eyeY);
                         morphing.visible = false;
                         stage.addChild(morphing);
                     }
@@ -281,6 +315,7 @@
 
                     if (confirm('本当に["' + label + '"]を削除してよろしいですか？')) {
                         morphing.removeMorph(label);
+                        $('option[value="' + label + '"]').remove();
                     }
                     break;
                 case 'deleteAll':

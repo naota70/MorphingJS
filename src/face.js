@@ -14,11 +14,10 @@
 
     p.Bitmap_initialize = p.initialize;
 
-    p.initialize = function (vertices, image) {
+    p.initialize = function (vertices, cacheCanvas) {
         var self = this;
-        var cacheCanvas, cacheCtx, w, h;
 
-        self.Bitmap_initialize(image);
+        self.DisplayObject_initialize();
 
         // 左上、右上、左下、右下の順に並び替える
         self.vertices = vertices = _.sortBy(vertices, function (v) {
@@ -32,23 +31,12 @@
         self.sourceRect = {
             x: 0,
             y: 0,
-            width: (w = vertices[1].x - vertices[0].x),
-            height: (h = vertices[2].y - vertices[0].y)
+            width: vertices[1].x - vertices[0].x,
+            height: vertices[2].y - vertices[0].y
         };
 
         // キャッシュを用いてプリレンダリング
-        cacheCanvas = self.cacheCanvas = cjs.createCanvas ?
-            cjs.createCanvas() :
-            document.createElement('canvas');
-        cacheCanvas.width = w;
-        cacheCanvas.height = h;
-        cacheCtx = cacheCanvas.getContext('2d');
-        cacheCtx.save();
-        cacheCtx.drawImage(this.image,
-            vertices[0].origin.x, vertices[0].origin.y, w, h,
-            0, 0, w, h
-        );
-        cacheCtx.restore();
+        self.cacheCanvas = cacheCanvas;
 
         // contextを自身に設定
         self._updateMask = _.bind(self._updateMask, self);
@@ -147,7 +135,7 @@
         // segment1
         ctx.setTransform(t1, t2, t3, t4, t5, t6);
         ctx.drawImage(cacheCanvas,
-//            vertices[0].origin.x, vertices[0].origin.y, w, h,
+            vertices[0].origin.x, vertices[0].origin.y, w, h,
             0, 0, w, h
         );
 
@@ -171,7 +159,7 @@
         ctx.clip();
         ctx.setTransform(t1, t2, t3, t4, t5, t6);
         ctx.drawImage(cacheCanvas,
-//            vertices[0].origin.x, vertices[0].origin.y, w, h,
+            vertices[0].origin.x, vertices[0].origin.y, w, h,
             0, 0 - h, w, h
         );
 
@@ -191,7 +179,7 @@
         }
 
         delete self.vertices;
-        delete self.image;
+        delete self.cacheCanvas;
 
         self.dispatchEvent('remove', self);
         self.removeAllEventListeners();

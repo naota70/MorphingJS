@@ -1,7 +1,18 @@
 (function (global, cjs) {
     'use strict';
 
-    function cloneShallow(source) {
+    //========================================
+    // Utility
+    //========================================
+    var slice = Array.prototype.slice;
+
+    var toString = Object.prototype.toString;
+
+    var isArray = Array.isArray || function (obj) {
+        return toString.call(obj) === '[object Array]';
+    };
+
+    var cloneShallow = function (source) {
         var obj = {};
         for (var prop in source) {
             if (source.hasOwnProperty(prop)) {
@@ -9,24 +20,82 @@
             }
         }
         return obj;
-    }
+    };
 
-//    function sortByVertex(vertices) {
-//        return _.sortBy(vertices, function (v) {
-//            return v.y + (v.x / 1000);
-//        });
-//    }
-//    var Face = function () {
-//        this.name = 'f:';
-//        this.vertices = [];
-//    };
-//
-//    var Vertex = function () {
-//        this.name = 'v:';
-//        this.x = 0;
-//        this.y = 0;
-//    };
+    //========================================
+    // Vertex
+    //========================================
+    var Vertex = (function () {
+        var Vertex = function (name, x, y) {
+            this.name = name;
+            this.x = x;
+            this.y = y;
+        };
 
+        var p = Vertex.prototype;
+
+        p.name = '';
+
+        p.x = 0;
+
+        p.y = 0;
+
+        p.toString = function () {
+            return '[object Vertex (name=' + this.name + ')]';
+        };
+
+        return Vertex;
+    })();
+
+    //========================================
+    // Face
+    //========================================
+    var Face = (function () {
+        var Face = function (name, vertices) {
+            this.name = name;
+            this.vertices = this.sortByCoordinates(vertices);
+        };
+
+        var p = Face.prototype;
+
+        p.name = '';
+
+        p.vertices = [];
+
+        /**
+         * ToDo: underscore.jsとの依存解消
+         * 配列を座標順（左上→右上→左下→右下）に並び替え
+         * @param vertices {Array}
+         * @returns {Array}
+         */
+        p.sortByCoordinates = function (vertices) {
+            return _.sortBy(vertices, function (v) {
+                if (v.toString().indexOf('object Vertex') === -1) {
+                    throw new Error('arguments isn`t ["Vertex"] instance array.');
+                }
+
+                return v.y + (v.x / 1000);
+            });
+        };
+
+        p.toString = function () {
+            return '[object Face (name=' + this.name + ')]';
+        };
+
+        return Face;
+    })();
+
+    //========================================
+    // Morphing
+    //========================================
+
+    /**
+     *
+     * @param width {number}
+     * @param height {number}
+     * @param origin {array|object}
+     * @constructor
+     */
     var Morphing = function (width, height, origin) {
         this.initialize(width, height, origin);
     };
@@ -34,6 +103,14 @@
     Morphing.NONE = function () {};
     
     Morphing.ORIGIN = 'origin';
+
+    Morphing.generateVertex = function (name, x, y) {
+        return new Vertex(name, x, y);
+    };
+
+    Morphing.generateFace = function (name, vertices) {
+        return new Face(name, vertices);
+    };
 
     var p = Morphing.prototype = new cjs.Bitmap();
 
@@ -57,32 +134,35 @@
      *
      * @param width
      * @param height
-     * @param origin
+     * @param origin {array|object}
      */
     p.initialize =  function (width, height, origin) {
-
+        // super init
         this.DisplayObject_initialize();
 
-        this._morphParam = {};
-
         // origin
-        this.setOrigin(origin);
+        this.initMorph(origin);
 
         // cache
-        var originCanvas = this.originCanvas = document.createElement('canvas');
-        originCanvas.width = width;
+        var originCanvas        = this.originCanvas = document.createElement('canvas');
+        originCanvas.width  = width;
         originCanvas.height = height;
-
-        this.cacheCanvas = originCanvas.cloneNode(true);
-
+        this.cacheCanvas    = originCanvas.cloneNode(true);
     };
 
-    p.setOrigin = function (origin) {
-        var morph = this.addMorph(Morphing.ORIGIN, origin);
-        var clone = this._tweenTarget = cloneShallow(morph);
+    p.initMorph = function (morphData) {
+        var origin;
 
-        this._prevLabel = Morphing.ORIGIN;
-        this._originMapping = this._createMappingData(clone);
+        if (isArray(morphData)) {
+            origin = this.addMorph(Morphing.ORIGIN, morphData);
+        } else {
+            this._morphParam = morphData;
+            origin = morphData.origin;
+        }
+
+        this._tweenTarget   = cloneShallow(origin);
+        this._originMapping = this._createMappingData(this._tweenTarget);
+        this._prevLabel     = Morphing.ORIGIN;
     };
 
     /**
@@ -102,6 +182,7 @@
     };
 
     /**
+     * ToDo: underscore.jsとの依存解消
      * @private
      */
     p._createMappingData = function (target) {
@@ -129,7 +210,7 @@
     };
 
     /**
-     *
+     * ToDo: underscore.jsとの依存解消
      * @param mappingMorph マッピングさせるMorphデータオブジェクト
      * @param [adjustX]
      * @param [adjustY]
@@ -212,7 +293,7 @@
 
     /**
      * Face配列をMorphDataに変換
-     * @param faces
+     * @param faces {array}
      * @returns Object
      */
     p.convertFaceToMorphParam = function (faces) {
@@ -234,8 +315,8 @@
 
     /**
      *
-     * @param label
-     * @param faces
+     * @param label {string}
+     * @param faces {array}
      * @returns {object}
      */
     p.addMorph = function (label, faces) {
@@ -244,6 +325,7 @@
             return null;
         }
 
+        this._morphParam || (this._morphParam = {});
         this._morphParam[label] = this.convertFaceToMorphParam(faces);
 
         return this._morphParam[label];
@@ -267,23 +349,25 @@
     };
 
     /**
-     *
-     * @param label
-     * @returns {*}
+     * 引数のMorphデータを返す
+     * 引数がない場合は全体を返す
+     * @param [label]
+     * @returns {object}
      */
     p.getMorph = function (label) {
-        return this._morphParam[label];
+        return label ? this._morphParam[label] : this._morphParam;
     };
 
     /**
      *
      */
     p.setTexture = function () {
-        var args = Array.prototype.slice.call(arguments);
+        var args = slice.call(arguments);
         var canvas = this.originCanvas,
+            eleType = args[0].toString(),
             ctx = canvas.getContext('2d');
 
-        if (args[0].toString().indexOf('HTMLImageElement') === -1) {
+        if (eleType.indexOf('HTMLImageElement') === -1 && eleType.indexOf('HTMLCanvasElement') === -1) {
             args.unshift(this.image);
         } else {
             this.image = args[0];
@@ -384,7 +468,7 @@
      * @returns {string}
      */
     p.toString = function () {
-        return '[Morphing (name=' + this.name + ')]';
+        return '[object Morphing]';
     };
 
     cjs.Morphing = Morphing;

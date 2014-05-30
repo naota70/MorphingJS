@@ -4,8 +4,8 @@
     var localStorage = global.localStorage;
     var LOCAL_STORAGE_ID = 'laughMaker:autoSaveData';
 
-    var CreateManager = function (stage, loader) {
-        this.initialize(stage, loader);
+    var CreateManager = function (stage) {
+        this.initialize(stage);
     };
 
     var p = CreateManager.prototype;
@@ -14,7 +14,7 @@
      * 初期化
      * @param stage createjs.Stage
      */
-    p.initialize = function (stage, loader) {
+    p.initialize = function (stage) {
         var self = this;
         var vContainer = self.vContainer = new cjs.Container();
         var fContainer = self.fContainer = new cjs.Container();
@@ -22,12 +22,17 @@
         stage.addChild(fContainer, vContainer);
 
         self.stage = stage;
-        self.loader = loader;
+        self.cacheCanvas = stage.canvas.cloneNode(true);
         self.vertices = [];
         self.faces = [];
         self.selected = [];
 
         self.load();
+    };
+
+    p.setTexture = function () {
+        var ctx = this.cacheCanvas.getContext('2d');
+        return ctx.drawImage.apply(ctx, arguments);
     };
 
     p.load = function () {
@@ -43,12 +48,13 @@
             });
 
             _.each(data.faces, function (f_data) {
+                var vertices = f_data.vertices;
                 self.createFace([
-                    self.getVertexAtName(f_data[0]),
-                    self.getVertexAtName(f_data[1]),
-                    self.getVertexAtName(f_data[2]),
-                    self.getVertexAtName(f_data[3])
-                ]);
+                    self.getVertexAtName(vertices[0]),
+                    self.getVertexAtName(vertices[1]),
+                    self.getVertexAtName(vertices[2]),
+                    self.getVertexAtName(vertices[3])
+                ], f_data.name);
             });
         }
     };
@@ -59,7 +65,10 @@
                 return {x: v.x, y: v.y, name: v.name};
             }),
             faces: _.map(this.faces, function (f) {
-                return _.pluck(f.vertices, 'name');
+                return {
+                    name: f.name,
+                    vertices: _.pluck(f.vertices, 'name')
+                };
             })
         });
         localStorage.setItem(LOCAL_STORAGE_ID, data);
@@ -123,13 +132,14 @@
     /**
      * ToDo: 同じ頂点を用いた際の予防線
      * @param __vertices__
+     * @param name
      */
-    p.createFace = function (__vertices__) {
+    p.createFace = function (__vertices__, name) {
         var self = this,
             faces = self.faces,
-            face = new cjs.Face(__vertices__, self.loader.getItem('eye').tag);
+            face = new cjs.Face(__vertices__, self.cacheCanvas);
 
-        face.name = 'f:' + Date.now() + cjs.UID.get();
+        face.name = name ? name : 'f:' + Date.now() + cjs.UID.get();
         self.fContainer.addChild(face);
         faces.push(face);
 
